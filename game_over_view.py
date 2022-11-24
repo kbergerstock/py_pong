@@ -7,16 +7,10 @@ from   gameData import gameData
 
 class GameOver(arcade.View):
 
-    def __init__(self):
+    def __init__(self,gd):
         super().__init__()
-        self.gd = None
+        self.gd = gd
 
-    def setup(self, gd):
-        self.gd  = gd
-
-    def on_show(self):
-        pass
-    
     def on_draw(self):
         arcade.start_render()
         self.gd.renderSCore()

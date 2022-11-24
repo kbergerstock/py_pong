@@ -17,9 +17,9 @@ class GameView(arcade.View):
     Main application class.
     """
 
-    def __init__(self):
+    def __init__(self,gd):
         super().__init__()
-
+        self.gd = gd
         random.seed()
 
         self.paddle_hit = arcade.Sound('sounds/paddle_hit.wav')
@@ -28,12 +28,10 @@ class GameView(arcade.View):
         arcade.play_sound(self.paddle_hit)
         # If you have sprite lists, you should create them here,
         # and set them to None
-        self.gd  = None
 
     def setup(self,gd):
         pd = 3 - gd.id  if gd.point else gd.id
         gd.ball.Serve(pd)
-        self.gd = gd
         
     def on_draw(self):
         """
