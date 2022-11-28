@@ -1,10 +1,11 @@
 # ball.py
 # k.r.bergerstock junr 2020
 # object classes for pong.py
-import const
+import math
 import arcade
 from arcade import color
 from const import sign
+from const import EDGES
 
 
 class Paddle(arcade.SpriteSolidColor):
@@ -16,14 +17,8 @@ class Paddle(arcade.SpriteSolidColor):
         self._score = 0
         self._id = id
         self._dy = 0
-        self.home()
+        self._track = 0
         self.input = [0, 0]
-
-    def home(self):
-        if self.id == 1:
-            self.set_position(30, 60)
-        else:
-            self.set_position(const.SCREEN_WIDTH - 30, const.SCREEN_HEIGHT - 60)
 
     def get_speed(self):
         return self._speed
@@ -53,29 +48,23 @@ class Paddle(arcade.SpriteSolidColor):
 
     dy = property(get_dy, set_dy)
 
-    def reset(self):
-        self.dy = 0
-        self.input[0] = 0
-        self.input[1] = 0
-
-    def scored(self):
-        self.score += 1
-
     # update the paddle position
-    def update(self, dt, edges):
+    def update(self, dt: float, edges):
         # check boundries
-        if self.dy != 0:
-            touched = arcade.check_for_collision_with_list(self,edges)
-            if not touched:
-                self.center_y += self.dy * self.speed * dt
-            else    :
-                self.center_y = touched[0].center_y + (4 + (touched[0].height + self.height) // 2) * self.dy * -1
+        touched = arcade.check_for_collision_with_list(self, edges)
+        if touched:
+            edge = touched[0].edge
+            if (edge == EDGES["top"] and self.dy == 1) or (
+                edge == EDGES["bottom"] and self.dy == -1
+            ):
                 self.dy = 0
+        # move
+        self.center_y += self.speed * dt * self.dy
 
     # set the movement condition
     def move(self, key, d):
         self.input[key] = d
-        # move 1 virtual pixel at a time
+        # move 1 pixel at a time
         if self.input[0] == 1:
             self.dy = 1
         elif self.input[1] == 1:
@@ -84,9 +73,14 @@ class Paddle(arcade.SpriteSolidColor):
             self.dy = 0
 
     # ai logic to control paddle
-    def track(self, sprite):
-        # get the difference betwwen the center points
-        self.dy = sign(sprite.center_y - self.center_y)
-
-    def render(self):
-        self.draw()
+    def track(self, sprite, edges):
+        if (self.id == 1 and sprite.dx == -1) or (self.id == 2 and sprite.dx == 1):
+            # get the difference betwwen the center points
+            if math.fabs(sprite.center_y - self.center_y) > 10.5:
+                self.dy = sign(self.center_y - sprite.center_y) * -1
+            else:
+                self.dy = 0
+        elif math.fabs(self.center_y - edges[2].center_y) > 10.5:
+            self.dy = sign(self.center_y - edges[2].center_y) * -1
+        else:
+            self.dy = 0
