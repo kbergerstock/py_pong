@@ -1,5 +1,6 @@
 # fps.py
 
+
 class FPS:
     def __init__(self):
         self.__fps = 0
@@ -17,8 +18,7 @@ class FPS:
     def reset(self):
         self.__counter = 0
         self.__time_delay = 0.0
-        
+
     @property
     def fps(self):
         return self.__fps
-
