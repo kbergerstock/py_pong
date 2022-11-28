@@ -24,6 +24,7 @@ class BallSprite(arcade.SpriteCircle):
         self._dy = 0.0
         self.last_edge = 0
         self.last_id = 0
+        self.point = False
         self.home()
 
     def get_speed(self) -> float:
@@ -83,11 +84,13 @@ class BallSprite(arcade.SpriteCircle):
                 self.last_edge = edge
             else:
                 for player in paddles:
+                    player.point = False
                     if (player.id == 1 and edge == EDGES["player2"]) or (
                         player.id == 2 and edge == EDGES["player1"]
                     ):
-                        player.score += 1
-                self.home()
+                        player.point = True
+                        print(player.id, player.point)
+                        self.home()
                 return True
 
         for player in paddles:

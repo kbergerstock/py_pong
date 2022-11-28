@@ -18,24 +18,26 @@ class Board(arcade.View):
     def __init__(self, window):
         super().__init__()
         self.edges = None
+        self.fps = FPS()
         # condition the random generator
         rand.seed()
         for i in range(8):
             rand.randrange(25, 85)
         self.window = window
         self.create_board()
-        self.fps = FPS()
+        # create the movable ubjects
         self.ball = BallSprite()
         self.player1 = Paddle(1)
         self.player2 = Paddle(2)
-        self.home_paddle(1)
-        self.home_paddle(2)
+        self.home()
+        # set up a sprite list to draw all moveable objects
         self.actions = arcade.SpriteList()
         self.actions.append(self.player1)
         self.actions.append(self.player2)
         self.actions.append(self.ball)
         self.AIplayer_1 = False
         self.AIplayer_2 = False
+        self.serve = rand.choice([1, 2])
 
     def get_edge(self):
         return self.repeat_count_x
@@ -57,13 +59,11 @@ class Board(arcade.View):
     # player1 2
     # player2 3
 
-    def home_paddle(self, id):
-        if id == 1:
-            self.player1.center_x = self.edges[2].center_x + 20
-            self.player1.center_y = self.edges[1].center_y + 50
-        else:
-            self.player2.center_x = self.edges[3].center_x - 20
-            self.player2.center_y = self.edges[0].center_y - 50
+    def home(self):
+        self.player1.center_x = self.edges[2].center_x + 20
+        self.player1.center_y = self.edges[1].center_y + 50
+        self.player2.center_x = self.edges[3].center_x - 20
+        self.player2.center_y = self.edges[0].center_y - 50
 
     def create_board(self):
         self.edges = arcade.SpriteList(True)
@@ -102,11 +102,24 @@ class Board(arcade.View):
         self.edges.draw()
         self.actions.draw()
 
+    def score(self):
+        if self.player1.point:
+            player = self.player1
+        else:
+            player = self.player2
+
+        if player.point and self.serve == player.id:
+            player.score += 1
+        else:
+            self.serve = player.id
+
     def on_update(self, delta_time):
         self.fps.update(delta_time)
         self.player1.update(delta_time, self.edges)
         self.player2.update(delta_time, self.edges)
-        self.ball.update(delta_time, self.edges, [self.player1, self.player2])
+        # ball update returns True when it is out of bounds
+        if self.ball.update(delta_time, self.edges, [self.player1, self.player2]):
+            self.score()
         if self.AIplayer_1:
             self.player1.track(self.ball, self.edges)
         if self.AIplayer_2:
@@ -168,7 +181,8 @@ class Board(arcade.View):
             self.player2.move(0, 0)
             self.player2.move(1, 1)
         elif key_code == 32:
-            self.ball.dx = rand.choice([1, -1])
+            self.ball.speed = BallSprite.__SPEED
+            self.ball.dx = 1 if self.serve == 1 else -1
             self.ball.dy = rand.choice([1, -1])
         elif key_code == 49:
             self.AIplayer_1 = not self.AIplayer_1
@@ -191,7 +205,7 @@ class Board(arcade.View):
 
         elif key_code == 65363 and not self.AIplayer_2:
             self.player2.move(1, 0)
-            
+
     def on_mouse_press(self, x: int, y: int, button: int, modifiers: int):
         return super().on_mouse_press(x, y, button, modifiers)
         pass

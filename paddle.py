@@ -18,7 +18,17 @@ class Paddle(arcade.SpriteSolidColor):
         self._id = id
         self._dy = 0
         self._track = 0
+        self._point = 0
         self.input = [0, 0]
+
+    def get_point(self):
+        return self._point
+
+    def set_point(self, value):
+        self._point = value
+
+    # set to player id if player won the last point
+    point = property(get_point, set_point)
 
     def get_speed(self):
         return self._speed
