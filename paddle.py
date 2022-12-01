@@ -9,10 +9,10 @@ from const import EDGES
 
 
 class Paddle(arcade.SpriteSolidColor):
-    __SPEED = 500
+    __SPEED = 600
 
     def __init__(self, id):
-        super().__init__(18, 75, color.PARIS_GREEN)
+        super().__init__(18, 80, color.PARIS_GREEN)
         self._speed = Paddle.__SPEED
         self._score = 0
         self._id = id

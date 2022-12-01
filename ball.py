@@ -12,16 +12,17 @@ from arcade import color
 
 
 class BallSprite(arcade.SpriteCircle):
-    __SPEED = 150.0
-    __RADIUS = 8
+    __RADIUS = 10
 
     # create a circle sprite
     def __init__(self):
         super().__init__(BallSprite.__RADIUS, color.ALLOY_ORANGE, False)
         self.set_angle()
-        self.speed = BallSprite.__SPEED
+        self.speed = const.BALL_VELOCITY
         self._dx = 0.0
         self._dy = 0.0
+        self.x1 = 0.0
+        self.y1 = 0.0
         self.last_edge = 0
         self.last_id = 0
         self.point = False
@@ -52,7 +53,7 @@ class BallSprite(arcade.SpriteCircle):
     dx = property(get_dx, set_dx)
 
     def set_angle(self):
-        degrees = random.triangular(25, 85)
+        degrees = random.triangular(30, 85)
         self._angle = float(degrees) * math.pi / 180.0
         self._cos = math.cos(self._angle)
         self._sin = math.sin(self._angle)
@@ -74,6 +75,7 @@ class BallSprite(arcade.SpriteCircle):
     # returns true if it collides with out of bounds marker
     # returns fkase otherwise
     def update(self, dt, edges, paddles):
+        w = edges[3].center_x - edges[2].center_x
         touched = arcade.check_for_collision_with_list(self, edges)
         if touched:
             edge = touched[0].edge
@@ -82,6 +84,8 @@ class BallSprite(arcade.SpriteCircle):
             elif edge == EDGES["top"] or edge == EDGES["bottom"]:
                 self.dy *= -1
                 self.last_edge = edge
+                self.x1 = 0
+                self.y1 = 0
             else:
                 for player in paddles:
                     player.point = False
@@ -89,7 +93,6 @@ class BallSprite(arcade.SpriteCircle):
                         player.id == 2 and edge == EDGES["player1"]
                     ):
                         player.point = True
-                        print(player.id, player.point)
                         self.home()
                 return True
 
@@ -98,8 +101,10 @@ class BallSprite(arcade.SpriteCircle):
             if tt and self.last_id != player.id:
                 self.dx *= -1
                 self.set_angle()
-                self.speed *= 1.03
+                self.speed *= random.triangular(10100, 10500) / 10000.0
                 self.last_id = player.id
+                self.x1 = 0
+                self.y1 = 0
         self.move(dt)
         return False
 
@@ -109,8 +114,3 @@ class BallSprite(arcade.SpriteCircle):
         self.dx = 0
         self.dy = 0
         self.last_edge = 0
-
-    # def Scored(self, player):
-    #     return (self.RIGHT <= 0 and player.id == 2) or (
-    #         self.LEFT >= const.SCREEN_WIDTH and player.id == 1
-    #     )
