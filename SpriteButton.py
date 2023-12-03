@@ -2,7 +2,6 @@
 # keith.bergerstock
 # 11/28.2022
 
-import math
 import arcade
 from arcade import color
 from create_texture import create_texture

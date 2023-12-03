@@ -75,7 +75,6 @@ class BallSprite(arcade.SpriteCircle):
     # returns true if it collides with out of bounds marker
     # returns fkase otherwise
     def update(self, dt, edges, paddles):
-        w = edges[3].center_x - edges[2].center_x
         touched = arcade.check_for_collision_with_list(self, edges)
         if touched:
             edge = touched[0].edge

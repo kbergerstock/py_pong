@@ -79,16 +79,12 @@ class Board(arcade.View):
     def create_board(self):
         self.edges = arcade.SpriteList(True)
         LW = self.window.width - 2 * EDGE_MARGIN - EDGE_LINE_WIDTH
-        top = arcade.SpriteSolidColor(
-            LW, EDGE_LINE_WIDTH, color.ALICE_BLUE
-        )
+        top = arcade.SpriteSolidColor(LW, EDGE_LINE_WIDTH, color.ALICE_BLUE)
         top.center_x = self.window.width // 2
         top.center_y = self.window.height - TOP_MARGIN
         top.edge = EDGES["top"]
         self.edges.append(top)
-        bot = arcade.SpriteSolidColor(
-            LW, EDGE_LINE_WIDTH, color.AERO_BLUE
-        )
+        bot = arcade.SpriteSolidColor(LW, EDGE_LINE_WIDTH, color.AERO_BLUE)
         bot.center_x = top.center_x
         bot.center_y = EDGE_MARGIN
         bot.edge = EDGES["bottom"]
