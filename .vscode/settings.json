@@ -1,4 +1,16 @@
 {
     "python.terminal.activateEnvInCurrentTerminal": true,
-    "python.testing.pytestEnabled": true
+    "python.testing.pytestEnabled": true,
+    "cSpell.words": [
+        "bergerstock",
+        "boundries",
+        "boundry",
+        "icecream",
+        "junr",
+        "reapeat"
+    ],
+    "python.testing.pytestArgs": [
+        "sounds"
+    ],
+    "python.testing.unittestEnabled": false
 }

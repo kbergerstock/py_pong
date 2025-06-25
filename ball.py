@@ -7,26 +7,28 @@ import const
 import random
 import arcade
 from const import sign
-from const import EDGES
+from const import EDGE
 from arcade import color
+from icecream import ic
 
 
 class BallSprite(arcade.SpriteCircle):
     __RADIUS = 10
 
     # create a circle sprite
-    def __init__(self):
+    def __init__(self, name):
         super().__init__(BallSprite.__RADIUS, color.ALLOY_ORANGE, False)
         self.set_angle()
         self.speed = const.BALL_VELOCITY
         self._dx = 0.0
         self._dy = 0.0
-        self.x1 = 0.0
-        self.y1 = 0.0
-        self.last_edge = 0
-        self.last_id = 0
         self.point = False
         self.home()
+        self._name = name
+
+    @property
+    def name(self) -> str:
+        return self._name
 
     def get_speed(self) -> float:
         return self._speed
@@ -71,45 +73,43 @@ class BallSprite(arcade.SpriteCircle):
         self.center_y += self.COSINE * self.speed * dt * self.dy
 
     # updates the ball location
-    # and handles collisions
+    # and handles collisions`
     # returns true if it collides with out of bounds marker
-    # returns fkase otherwise
-    def update(self, dt, edges, paddles):
-        touched = arcade.check_for_collision_with_list(self, edges)
+    # returns false otherwise
+    def update(self, dt, sprites: arcade.SpriteList, server: int):
+        player = None
+        touched = arcade.check_for_collision_with_list(self, sprites)
         if touched:
-            edge = touched[0].edge
-            if self.last_edge == edge:
-                pass
-            elif edge == EDGES["top"] or edge == EDGES["bottom"]:
+            ic(touched[0].name)
+            if touched[0].name == "top" or touched[0].name == "bottom":
                 self.dy *= -1
-                self.last_edge = edge
-                self.x1 = 0
-                self.y1 = 0
-            else:
-                for player in paddles:
-                    player.point = False
-                    if (player.id == 1 and edge == EDGES["player2"]) or (
-                        player.id == 2 and edge == EDGES["player1"]
-                    ):
-                        player.point = True
-                        self.home()
-                return True
-
-        for player in paddles:
-            tt = arcade.check_for_collision(self, player)
-            if tt and self.last_id != player.id:
-                self.dx *= -1
+            elif touched[0].name == "ply1":
+                sprites[EDGE["ply1"]].point = False
                 self.set_angle()
-                self.speed *= random.triangular(10100, 10500) / 10000.0
-                self.last_id = player.id
-                self.x1 = 0
-                self.y1 = 0
+                self.dx *= -1
+                self.dy *= -1
+            elif touched[0].name == "ply2":
+                sprites[EDGE["ply2"]].point = False
+                self.set_angle()
+                self.dx *= -1
+                self.dy *= -1
+            elif touched[0].name == "end1":
+                self.home()
+                sprites[EDGE["ply2"]].point = False
+                if sprites[EDGE["ply2"]].id == server:
+                    sprites[EDGE["ply2"]].point = True
+                return True, "ply2"
+            elif touched[0].name == "end2":
+                self.home()
+                sprites[EDGE["ply1"]].point = False
+                if sprites[EDGE["ply1"]].id == server:
+                    sprites[EDGE["ply1"]].point = True
+                return True, "ply1"
         self.move(dt)
-        return False
+        return False, False
 
     def home(self):
         self.center_y = const.SCREEN_HEIGHT // 2
         self.center_x = const.SCREEN_WIDTH // 2
         self.dx = 0
         self.dy = 0
-        self.last_edge = 0

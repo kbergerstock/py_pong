@@ -5,8 +5,7 @@ SCREEN_HEIGHT = 600
 MSG_WIDTH = SCREEN_WIDTH - 40
 SCREEN_TITLE = "PONG"
 SCREEN_COLOR = [40, 45, 52, 1]
-
-EDGES = {"top": 10, "bottom": 11, "player1": 20, "player2": 21}
+EDGE = {"top": 0, "bottom": 1, "end1": 2, "end2": 3, "ply1": 4, "ply2": 5}
 
 BALL_VELOCITY = 500
 

@@ -5,8 +5,10 @@ from arcade import color
 from fps import FPS
 from ball import BallSprite
 from paddle import Paddle
-from const import EDGES
+from const import EDGE
 from SpriteButton import SpriteButton as Toggle
+from edge import Edge
+from icecream import ic
 
 SCORE_MARGIN = 40
 EDGE_MARGIN = 12
@@ -17,7 +19,8 @@ EDGE_LINE_WIDTH = 15
 class Board(arcade.View):
     def __init__(self, window):
         super().__init__()
-        self.edges = None
+        # declare the sprit list for the application
+        self.sprites = arcade.SpriteList(True)
         self.fps = FPS()
         # condition the random generator
         rand.seed()
@@ -25,128 +28,110 @@ class Board(arcade.View):
             rand.randrange(25, 85)
         self.window = window
         self.create_board()
-        # create the movable ubjects
-        self.ball = BallSprite()
-        self.player1 = Paddle(1)
-        self.player2 = Paddle(2)
-        self.home()
+        # create the movable objects
+        self.ball = BallSprite("ball")
+        self.player1 = Paddle(1, name="ply1")
+        self.player2 = Paddle(2, k=["RED", color.ALIZARIN_CRIMSON], name="ply2")
         # set up a sprite list to draw all moveable objects
-        self.actions = arcade.SpriteList()
-        self.actions.append(self.player1)
-        self.actions.append(self.player2)
-        self.actions.append(self.ball)
-        self.AIplayer_1 = Toggle(35, window.height - 25)
-        self.AIplayer_2 = Toggle(100, window.height - 25)
+        self.sprites.append(self.player1)
+        self.sprites.append(self.player2)
+        self.sprites.append(self.ball)
+        self.AIplayer_1 = Toggle(35, window.height - 25, name="AI1")
+        self.AIplayer_2 = Toggle(100, window.height - 25, name="AI2")
         k = [["RED", color.RED], ["GREEN", color.GREEN]]
-        self.led1 = Toggle(400, window.height - 25, w=20, h=20, colors=k)
-        self.led2 = Toggle(window.width - 400, window.height - 25, w=20, h=20, colors=k)
-        self.buttons = arcade.SpriteList()
-        self.buttons.append(self.AIplayer_1)
-        self.buttons.append(self.AIplayer_2)
-        self.buttons.append(self.led1)
-        self.buttons.append(self.led2)
-        self.serve = rand.choice([1, 2])
-        self.set_server(self.serve)
+        self.led1 = Toggle(400, window.height - 25, w=20, h=20, colors=k, name="led1")
+        self.led2 = Toggle(window.width - 400, window.height - 25, w=20, h=20, colors=k, name="led2")
+        self.sprites.append(self.AIplayer_1)
+        self.sprites.append(self.AIplayer_2)
+        self.sprites.append(self.led1)
+        self.sprites.append(self.led2)
+        self.home(self.sprites)
+        # keep track of who is server
+        self._server = 0
+        # flow control booleans
+        self.wait_for_serve = True
+        self.game_started = False
+        self.game_over = True
+        self.check_score = False
+        self.enter_initials = False
+        self.auto_play = False
+        self.wait_for_auto_serve = False
+        self.about_flag = False
 
-    def get_edge(self):
-        return self.repeat_count_x
-
-    def set_edge(self, v):
-        self.reapeat_count_x = v
-
-    edge = property(get_edge, set_edge)
-
-    # the edges are stored in this oreder
+    # the self.sprites are stored in this order
     # top 0
     # bottom 1
     # player1 2
     # player2 3
 
-    def home(self):
-        self.player1.center_x = (
-            self.edges[2].center_x + 5 + (EDGE_LINE_WIDTH + self.player1.width) / 2
-        )
-        self.player1.center_y = (
-            self.edges[1].center_y + 5 + (EDGE_LINE_WIDTH + self.player1.height) / 2
-        )
-        self.player2.center_x = (
-            self.edges[3].center_x - 5 - (EDGE_LINE_WIDTH + self.player2.width) / 2
-        )
-        self.player2.center_y = (
-            self.edges[0].center_y - 5 - (EDGE_LINE_WIDTH + self.player2.height) / 2
-        )
+    def home(self, edges):
+        self.player1.center_x = edges[EDGE["end1"]].center_x + 5 + (EDGE_LINE_WIDTH + self.player1.width) // 2
+        self.player1.center_y = edges[EDGE["bottom"]].center_y + 5 + (EDGE_LINE_WIDTH + self.player1.height) // 2
+        self.player2.center_x = edges[EDGE["end2"]].center_x - 5 - (EDGE_LINE_WIDTH + self.player2.width) // 2
+        self.player2.center_y = edges[EDGE["top"]].center_y - 5 - (EDGE_LINE_WIDTH + self.player2.height) // 2
 
     def create_board(self):
-        self.edges = arcade.SpriteList(True)
+        """create the board using sprites
+        to enable sprite detection for boundry checks
+        append the sprites to the sprite list
+        """
         LW = self.window.width - 2 * EDGE_MARGIN - EDGE_LINE_WIDTH
-        top = arcade.SpriteSolidColor(LW, EDGE_LINE_WIDTH, color.ALICE_BLUE)
+        top = Edge(LW, EDGE_LINE_WIDTH, color.ALICE_BLUE, name="top")
         top.center_x = self.window.width // 2
         top.center_y = self.window.height - TOP_MARGIN
-        top.edge = EDGES["top"]
-        self.edges.append(top)
-        bot = arcade.SpriteSolidColor(LW, EDGE_LINE_WIDTH, color.AERO_BLUE)
-        bot.center_x = top.center_x
+        self.sprites.append(top)
+        bot = Edge(LW, EDGE_LINE_WIDTH, color.AERO_BLUE, name="bottom")
+        bot.center_x = self.window.width // 2
         bot.center_y = EDGE_MARGIN
-        bot.edge = EDGES["bottom"]
-        self.edges.append(bot)
+        self.sprites.append(bot)
         eh = top.center_y - bot.center_y + EDGE_LINE_WIDTH
-        ecy = EDGE_MARGIN + (top.center_y - bot.center_y) / 2.0
-        end1 = arcade.SpriteSolidColor(EDGE_LINE_WIDTH, eh, color.ALIZARIN_CRIMSON)
-        end1.center_x = EDGE_MARGIN + EDGE_LINE_WIDTH / 2
+        ecy = EDGE_MARGIN + (top.center_y - bot.center_y) // 2
+        end1 = Edge(EDGE_LINE_WIDTH, eh, color.ALIZARIN_CRIMSON, name="end1")
+        end1.center_x = EDGE_MARGIN + EDGE_LINE_WIDTH // 2
         end1.center_y = ecy
-        end1.edge = EDGES["player1"]
-        self.edges.append(end1)
-        end2 = arcade.SpriteSolidColor(EDGE_LINE_WIDTH, eh, color.ALIZARIN_CRIMSON)
-        end2.center_x = self.window.width - EDGE_MARGIN - EDGE_LINE_WIDTH / 2
+        self.sprites.append(end1)
+        end2 = Edge(EDGE_LINE_WIDTH, eh, color.ALIZARIN_CRIMSON, name="end2")
+        end2.center_x = self.window.width - EDGE_MARGIN - EDGE_LINE_WIDTH // 2
         end2.center_y = ecy
-        end2.edge = EDGES["player2"]
-        self.edges.append(end2)
+        self.sprites.append(end2)
 
     def on_draw(self):
-        arcade.start_render()
+        self.clear()
+        self.sprites.draw()
         self.render_fps()
         self.render_velocity()
         self.render_score()
-        self.buttons.draw()
-        self.edges.draw()
-        self.actions.draw()
 
-    def set_server(self, player_id):
-        self.serve = player_id
-        # id = 1 maps to buttons[2]
-        # id = 2 maps to buttons[3]
-        # 5 - idx maps to the opposite led
-        idx = player_id + 1
-        self.buttons[idx].status = True
-        self.buttons[5 - idx].status = False
+    def score(self, v, name):
+        if v and (name == "ply1" or name == "ply2"):
+            player = self.sprites[EDGE[name]]
+            if player.point:
+                player.score += 1
+            else:
+                # change sever side if no point was mde
+                self._server = 2 if player.id == 1 else 2
 
-    def score(self):
-        if self.player1.point:
-            player = self.player1
-        else:
-            player = self.player2
-
-        if player.point and self.serve == player.id:
-            player.score += 1
-        else:
-            self.set_server(player.id)
-
-        if self.AIplayer_1.status and self.AIplayer_2.status:
-            self.ball.speed = const.BALL_VELOCITY
-            self.ball.dx = 1 if self.serve == 1 else -1
-            self.ball.dy = rand.choice([1, -1])
+            ic(name, v, player.name, player.id, player.point, self._server)
+            # FIX does not belong here
+            if self.AIplayer_1.track and self.AIplayer_2.track:
+                self.ball.speed = const.BALL_VELOCITY
+                self.ball.dx = 1 if self._server else -1
+                self.ball.dy = rand.choice([1, -1])
 
     def on_update(self, delta_time):
-        self.fps.update(delta_time)
-        self.player1.update(delta_time, self.edges)
-        self.player2.update(delta_time, self.edges)
-        # ball update returns True when it is out of bounds
-        if self.ball.update(delta_time, self.edges, [self.player1, self.player2]):
-            self.score()
-        if self.AIplayer_1.status:
-            self.player1.track(self.ball, self.edges)
-        if self.AIplayer_2.status:
-            self.player2.track(self.ball, self.edges)
+        if self.wait_for_auto_serve:
+            self.fps.update(delta_time)
+        else:
+            self.player1.update(delta_time, self.sprites)
+            self.player2.update(delta_time, self.sprites)
+            self.led1.update_led(self.server)
+            self.led2.update_led(self._server)
+            # ball update returns True when it is out of bounds
+            self.score(*self.ball.update(delta_time, self.sprites, self._server))
+            if self.auto_play and self.AIplayer_1.track:
+                self.player1.track(self.ball, self.sprites[EDGE["end1"]])
+            if self.auto_play and self.AIplayer_2.track:
+                self.player2.track(self.ball, self.sprites[EDGE["end2"]])
 
     def render_fps(self):
         arcade.draw_text(
@@ -188,49 +173,54 @@ class Board(arcade.View):
         http://arcade.academy/arcade.key.html
         """
         # key code for 'a'
-        if key_code == 97 and not self.AIplayer_1.status:
+        if key_code == 97 and not self.AIplayer_1.track:
             self.player1.move(1, 0)  # stop the down movement
             self.player1.move(0, 1)  # start the up movement
         # key code for 'd'
-        elif key_code == 100 and not self.AIplayer_1.status:
-            self.player1.move(0, 0)  # stop the up movment
+        elif key_code == 100 and not self.AIplayer_1.track:
+            self.player1.move(0, 0)  # stop the up movement
             self.player1.move(1, 1)  # start the down movement
         # key code for 'left'
-        elif key_code == 65361 and not self.AIplayer_2.status:
+        elif key_code == 65361 and not self.AIplayer_2.track:
             self.player2.move(1, 0)
             self.player2.move(0, 1)
         # key code for 'right'
-        elif key_code == 65363 and not self.AIplayer_2.status:
+        elif key_code == 65363 and not self.AIplayer_2.track:
             self.player2.move(0, 0)
             self.player2.move(1, 1)
         elif key_code == 32:
+            if not self.game_started:
+                self._server = rand.choice([1, 2])
+                self.game_started = True
             self.ball.speed = const.BALL_VELOCITY
-            self.ball.dx = 1 if self.serve == 1 else -1
+            self.ball.dx = 1 if self._server == 1 else -1
+            self.ball.set_angle()
             self.ball.dy = rand.choice([1, -1])
         elif key_code == 49:
-            self.AIplayer_1.status = not self.AIplayer_1.status
+            self.AIplayer_1.track = not self.AIplayer_1.track
         elif key_code == 50:
-            self.AIplayer_2.status = not self.AIplayer_2.status
+            self.AIplayer_2.track = not self.AIplayer_2.track
 
     def on_key_release(self, key_code, key_modifiers):
         """
         Called whenever the user lets off a previously pressed key.
         """
-        # stop the motion that coresponds to the key code
-        if key_code == 97 and not self.AIplayer_1.status:
+        # stop the motion that corresponds to the key code
+        if key_code == 97 and not self.AIplayer_1.track:
             self.player1.move(0, 0)
 
-        elif key_code == 100 and not self.AIplayer_1.status:
+        elif key_code == 100 and not self.AIplayer_1.track:
             self.player1.move(1, 0)
 
-        elif key_code == 65361 and not self.AIplayer_2.status:
+        elif key_code == 65361 and not self.AIplayer_2.track:
             self.player2.move(0, 0)
 
-        elif key_code == 65363 and not self.AIplayer_2.status:
+        elif key_code == 65363 and not self.AIplayer_2.track:
             self.player2.move(1, 0)
 
+    # FIX THIS MODULE
     def on_mouse_press(self, x: int, y: int, button: int, modifiers: int):
-        tb = arcade.get_sprites_at_point((x, y), self.buttons)
+        tb = arcade.get_sprites_at_point((x, y), self.sprites)
         if tb:
             tb[0].status = not tb[0].status
         return super().on_mouse_press(x, y, button, modifiers)
@@ -238,15 +228,3 @@ class Board(arcade.View):
     def on_mouse_release(self, x: int, y: int, button: int, modifiers: int):
         return super().on_mouse_release(x, y, button, modifiers)
         pass
-
-
-def main():
-    window = arcade.Window(const.SCREEN_WIDTH, const.SCREEN_HEIGHT)
-    window.center_window()
-    board = Board(window)
-    window.show_view(board)
-    arcade.run()
-
-
-if __name__ == "__main__":
-    main()

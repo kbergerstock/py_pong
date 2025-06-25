@@ -5,21 +5,30 @@ import math
 import arcade
 from arcade import color
 from const import sign
-from const import EDGES
+from const import EDGE
+from create_texture import create_texture
 
 
-class Paddle(arcade.SpriteSolidColor):
+class Paddle(arcade.BasicSprite):
     __SPEED = 600
 
-    def __init__(self, id):
-        super().__init__(18, 80, color.PARIS_GREEN)
+    def __init__(self, id: int, k=["ANDROID_GREEN", color.ANDROID_GREEN], name="ply1"):
+        super().__init__(create_texture(18, 80, k))
         self._speed = Paddle.__SPEED
         self._score = 0
         self._id = id
         self._dy = 0
-        self._track = 0
         self._point = 0
         self.input = [0, 0]
+        self._name = name
+
+    @property
+    def name(self) -> str:
+        return self._name
+
+    @property
+    def id(self):
+        return self._id
 
     def get_point(self):
         return self._point
@@ -46,10 +55,6 @@ class Paddle(arcade.SpriteSolidColor):
 
     score = property(get_score, set_score)
 
-    @property
-    def id(self):
-        return self._id
-
     def get_dy(self):
         return self._dy
 
@@ -59,38 +64,39 @@ class Paddle(arcade.SpriteSolidColor):
     dy = property(get_dy, set_dy)
 
     # update the paddle position
-    def update(self, dt: float, edges):
-        # check boundries
-        touched = arcade.check_for_collision_with_list(self, edges)
+    def update(self, dt: float, sprites: arcade.SpriteList):
+        touched = arcade.check_for_collision_with_list(self, sprites)
         if touched:
-            edge = touched[0].edge
-            if (edge == EDGES["top"] and self.dy == 1) or (
-                edge == EDGES["bottom"] and self.dy == -1
-            ):
+            if touched[0].name == "top":
+                self.dy = -1 if self.input[1] else 0
+            elif touched[0].name == "bottom":
+                self.dy = 1 if self.input[0] else 0
+        else:
+            if self.input[0] == 1:
+                self.dy = 1
+            elif self.input[1] == 1:
+                self.dy = -1
+            else:
                 self.dy = 0
-        # move
+
         self.center_y += self.speed * dt * self.dy
 
     # set the movement condition
     def move(self, key, d):
         self.input[key] = d
-        # move 1 pixel at a time
-        if self.input[0] == 1:
-            self.dy = 1
-        elif self.input[1] == 1:
-            self.dy = -1
-        else:
-            self.dy = 0
 
     # ai logic to control paddle
-    def track(self, sprite, edges):
-        if (self.id == 1 and sprite.dx == -1) or (self.id == 2 and sprite.dx == 1):
-            # get the difference betwwen the center points
-            if math.fabs(sprite.center_y - self.center_y) > 10.5:
-                self.dy = sign(self.center_y - sprite.center_y) * -1
+    def track(self, ball, edge):
+        if (self.id == 1 and ball.dx == -1) or (self.id == 2 and ball.dx == 1):
+            # get the difference between the center points
+            delta = ball.center_y - self.center_y
+            if math.fabs(delta) > 10.5:
+                self.dy = sign(delta) * -1
             else:
                 self.dy = 0
-        elif math.fabs(self.center_y - edges[2].center_y) > 10.5:
-            self.dy = sign(self.center_y - edges[2].center_y) * -1
+            return
+        if math.fabs(self.center_y - edge.center_y) > 10.5:
+            self.dy = sign(self.center_y - edge.center_y) * -1
         else:
             self.dy = 0
+        return
